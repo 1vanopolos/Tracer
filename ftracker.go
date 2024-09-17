@@ -1,9 +1,11 @@
-package main
+package ftracker
 
 import (
 	"fmt"
+	"math"
 )
 
+// Основные константы, необходимые для расчетов.
 // Основные константы, необходимые для расчетов.
 const (
 	lenStep   = 0.65  // средняя длина шага.
@@ -19,7 +21,8 @@ const (
 //
 // action int — количество совершенных действий (число шагов при ходьбе и беге, либо гребков при плавании).
 func distance(action int) float64 {
-	return float64(action) * lenStep / mInKm
+	distance := float64(action) * lenStep / mInKm
+	return distance
 
 }
 
@@ -33,8 +36,9 @@ func meanSpeed(action int, duration float64) float64 {
 	if duration == 0 {
 		return 0
 	}
-	distance := distance(action)
-	return distance / duration
+	distance := distance(action) / duration
+
+	return distance
 }
 
 // ShowTrainingInfo возвращает строку с информацией о тренировке.
@@ -58,7 +62,7 @@ func ShowTrainingInfo(action int, trainingType string, duration, weight, height 
 		calories := WalkingSpentCalories(action, duration, weight, height) // вызовите здесь необходимую функцию
 		return fmt.Sprintf("Тип тренировки: %s\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f\n", trainingType, duration, distance, speed, calories)
 	case trainingType == "Плавание":
-		distance := distance(action, countPool)                                    // вызовите здесь необходимую функцию
+		distance := distance(action)                                               // вызовите здесь необходимую функцию
 		speed := swimmingMeanSpeed(lengthPool, countPool, duration)                // вызовите здесь необходимую функцию
 		calories := SwimmingSpentCalories(lengthPool, countPool, duration, weight) // вызовите здесь необходимую функцию
 		return fmt.Sprintf("Тип тренировки: %s\nДлительность: %.2f ч.\nДистанция: %.2f км.\nСкорость: %.2f км/ч\nСожгли калорий: %.2f\n", trainingType, duration, distance, speed, calories)
@@ -107,12 +111,15 @@ const (
 // weight float64 — вес пользователя.
 // height float64 — рост пользователя.
 func WalkingSpentCalories(action int, duration, weight, height float64) float64 {
-	// ваш код здесь
-	if action == 0 {
+	if action == 0 || duration == 0 {
 		return 0
 	}
 
-	walkingCal := ((walkingCaloriesWeightMultiplier*weight + (meanSpeed(action, duration)*2/height)*walkingSpeedHeightMultiplier*weight) * duration * minInH)
+	speedMetr := meanSpeed(action, duration) * kmhInMsec
+	quadSpeed := math.Pow(speedMetr, 2)
+	weightK1 := weight * walkingCaloriesWeightMultiplier
+	weightK2 := weight * walkingSpeedHeightMultiplier
+	walkingCal := (weightK1 + quadSpeed/(height/cmInM)*weightK2) * duration * minInH
 
 	return walkingCal
 }
@@ -154,27 +161,4 @@ func SwimmingSpentCalories(lengthPool, countPool int, duration, weight float64) 
 	swimmingCal := ((swimmingMeanSpeed(lengthPool, countPool, duration) + swimmingCaloriesMeanSpeedShift) * swimmingCaloriesWeightMultiplier * weight * duration)
 
 	return swimmingCal
-}
-
-// showMessage выводит на печать сообщение трекера.
-//
-// Параметры:
-//
-// s string — сообщение на печать.
-func showMessage(s string) {
-	fmt.Printf(s)
-}
-
-func main() {
-
-	action := 50000            // action int — количество совершенных действий(число шагов при ходьбе и беге, либо гребков при плавании).
-	trainingType := "Плавание" // trainingType string — вид тренировки(Бег, Ходьба, Плавание).
-	weight := 85.0             // weight float64 — вес пользователя.
-	height := 1.8              // height float64 — рост пользователя.
-	duration := 1.0            // duration float64 — длительность тренировки в часах.
-	lengthPool := 50           // lengthPool int — длина бассейна в метрах.
-	countPool := 3             // countPool int — сколько раз пользователь переплыл бассейн.
-
-	//ShowTrainingInfo(action int, trainingType string, duration, weight, height float64, lengthPool, countPool int)
-	showMessage(ShowTrainingInfo(action, trainingType, duration, weight, height, lengthPool, countPool))
 }
